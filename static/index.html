@@ -1,0 +1,243 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN" "http://www.w3.org/TR/html4/loose.dtd">
+<html>
+
+<head>
+    <meta http-equiv="content-type" content="text/html; charset=utf-8">
+    <title>Reflection Removal</title>
+    <style type="text/css">
+        canvas {
+            background-color: rgba(0, 0, 0, 0);
+        }
+    </style>
+</head>
+
+<body>
+
+<img id="image" src="" style="width: 256px; height: 256px;">
+<div id="canvasDiv" style="position: relative; margin-top: -257px; margin-bottom: 10px;"></div>
+
+<div id="control_panel" style="margin: 10px 0px;">
+    <div style="padding-bottom: 5px;">
+        Brush Size:
+        <input type="number" name="brushsize" id="brushsize" value="5"/>
+    </div>
+    <button id="RefreshButton">刷新</button>
+    <button id="Eraser">橡皮擦</button>
+    <button id="UpdateButton">完成</button>
+    <input type="file" onchange="selectImage(this);"/>
+
+</div>
+<div id="imageWrapper"></div>
+<script type="text/javascript" src="./static/jquery-3.3.1.min.js"></script>
+<script>
+    var image_base64 = '';
+    var eraser = 0;
+
+    function selectImage(file) {
+        if (!file.files || !file.files[0]) {
+            return;
+        }
+        var reader = new FileReader();
+        reader.onload = function (evt) {
+            document.getElementById('image').src = evt.target.result;
+            image_base64 = evt.target.result.substring(22,);
+        }
+        console.log(file.files);
+        reader.readAsDataURL(file.files[0]);
+        clear();
+    }
+
+    var size = 256
+    var canvasWidth = size;
+    var canvasHeight = size;
+
+    var canvasDiv = document.getElementById('canvasDiv');
+    canvas = document.createElement('canvas');
+    canvas.setAttribute('width', canvasWidth);
+    canvas.setAttribute('height', canvasHeight);
+    canvas.setAttribute('id', 'canvas');
+    canvas.pencol
+    canvasDiv.appendChild(canvas);
+    if (typeof G_vmlCanvasManager != 'undefined') {
+        canvas = G_vmlCanvasManager.initElement(canvas);
+    }
+    context = canvas.getContext("2d");
+    context.strokeStyle = "#000"
+
+    if (window.PointerEvent) {
+        canvas = document.getElementById("canvas");
+        canvas.addEventListener("pointerdown", function (e) {
+            paint = true;
+            addClick(e.pageX - 8 - this.offsetLeft, e.pageY - 8 - this.offsetTop);
+            redraw();
+        });
+        canvas.addEventListener("pointermove", function (e) {
+            if (paint) {
+                addClick(e.pageX - 8 - this.offsetLeft, e.pageY - 8 - this.offsetTop, true);
+                redraw();
+            }
+        });
+        canvas.addEventListener("pointerup", function (e) {
+            paint = false;
+        });
+    } else {
+        $('#canvas').mousedown(function (e) {
+
+            paint = true;
+            addClick(e.pageX - 8 - this.offsetLeft, e.pageY - 8 - this.offsetTop);
+            redraw();
+        });
+        $('#canvas').mousemove(function (e) {
+            if (paint) {
+                addClick(e.pageX - 8 - this.offsetLeft, e.pageY - 8 - this.offsetTop, true);
+                redraw();
+            }
+        });
+        $('#canvas').mouseup(function (e) {
+            paint = false;
+        });
+    }
+    var paint;
+    var requestGrid = new Array();
+    for (var i = 0; i < size; i++) {
+        requestGrid[i] = new Array();
+        for (var j = 0; j < size; j++) {
+            requestGrid[i][j] = 0;
+        }
+    }
+
+    function addClick(x, y, dragging) {
+        setDataToRequestGrid(x, y);
+    }
+
+    var brushSize = 1;
+
+    function setDataToRequestGrid(x_label, y_label) {
+        brushSize = $("#brushsize").val();
+        // for (var i = -brushSize; i < brushSize; i++) {
+        //     for (var j = -brushSize; j < brushSize; j++) {
+        //         var x_label = int(Math.ceil(left / 1) + i);
+        //         var y_label = int(Math.ceil(right / 1) + j);
+        x_label = Math.round(x_label);
+        y_label = Math.round(y_label);
+        for (var y = -brushSize; y <= brushSize; y++) {
+            var x_l = -Math.round(Math.sqrt(brushSize * brushSize - y * y));
+            var x_r = Math.round(Math.sqrt(brushSize * brushSize - y * y));
+            for (var x = x_l; x <= x_r; x++) {
+                if (x_label + x < 0 || y_label + y < 0) ;
+                else {
+                    if (eraser == 0) requestGrid[x_label + x][y_label + y] = 1;
+                    else requestGrid[x_label + x][y_label + y] = 0;
+                }
+            }
+        }
+        for (var x = -brushSize; x <= brushSize; x++) {
+            var y_l = -Math.round(Math.sqrt(brushSize * brushSize - x * x));
+            var y_r = Math.round(Math.sqrt(brushSize * brushSize - x * x));
+            for (var y = y_l; y <= y_r; y++) {
+                if (x_label + x < 0 || y_label + y < 0) ;
+                else {
+                    if (eraser == 0) requestGrid[x_label + x][y_label + y] = 1;
+                    else requestGrid[x_label + x][y_label + y] = 0;
+                }
+            }
+        }
+
+
+        // for (var p = -3; p < 4; p++) {
+        //     for (var q = -3; q < 2; q++) {
+        //         requestGrid[x_label + p][y_label + q] = 1
+        //     }
+        // }
+        // for (var p = -2; p < 2; p++) {
+        //     requestGrid[x_label + p][y_label + 2] = 1
+        // }
+        // requestGrid[x_label - 1][y_label + 3] = 1
+
+
+        //     }
+        // }
+    }
+
+    function clear() {
+        for (var i = 0; i < size; i++) {
+            for (var j = 0; j < size; j++) {
+                requestGrid[i][j] = 0;
+            }
+        }
+        redraw();
+    }
+
+
+    function updateMap() {
+        var finalArray = new Array();
+        for (var i = 0; i < size; i++) {
+            finalArray[i] = new Array();
+            for (var j = 0; j < size; j++) {
+                if (requestGrid[j][i] == 1) {
+                    finalArray[i][j] = 179
+                } else finalArray[i][j] = 26
+            }
+        }
+        if (image_base64.length == 0) {
+            alert("请选择图片")
+        } else {
+            $.ajax({
+                type: "POST",
+                url: "/ImgSave",
+                dataType: 'json',
+                data: {'data': JSON.stringify(finalArray + '|' + image_base64)},
+                success: function (data) {
+                    $("#imageWrapper").empty();
+                    var newImage = document.createElement('img');
+                    newImage.src = './static/result/image' + data + '_result.jpg';
+                    newImage.width = size;
+                    newImage.height = size;
+                    $("#imageWrapper").append(newImage);
+                },
+                error: function (XMLHttpRequest) {
+                    $("#imageWrapper").empty();
+                    var newImage = document.createElement('img');
+                    newImage.src = './static/result/image' + XMLHttpRequest.responseText + '_result.jpg';
+                    newImage.width = size;
+                    newImage.height = size;
+                    $("#imageWrapper").append(newImage);
+                }
+            });
+
+        }
+    }
+
+    function redraw() {
+        context.clearRect(0, 0, context.canvas.width, context.canvas.height); // Clears the canvas
+        context.lineJoin = "round";
+        context.lineWidth = 1;
+        for (var i = 0; i < size; i++) {
+            for (var j = 0; j < size; j++) {
+                if (requestGrid[i][j] == 1) {
+                    context.fillStyle = '#000'
+                    context.fillRect(i, j, 1, 1)
+                }
+            }
+        }
+    }
+
+    $(document).ready(function () {
+        $("#RefreshButton").bind("click",
+            function () {
+                clear();
+            });
+        $("#UpdateButton").bind("click",
+            function () {
+                updateMap();
+            });
+        $("#Eraser").bind("click",
+            function () {
+                if (eraser == 0) eraser = 1;
+                else eraser = 0;
+            });
+    });
+</script>
+</body>
+
+</html>

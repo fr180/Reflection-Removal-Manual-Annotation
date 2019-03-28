@@ -25,15 +25,15 @@ You can also use your own dataset, but make sure your folder is as follows:
 >>+-- `transmission_layer`<br>
 
 
-##Trian
+## Trian
 `$ python3 test_model.py --train_dataset your_train_data_path`
 
 You can view or modify the config in cfg.py.
 
-##Test
+## Test
 Download our pre-trained model from [here](https://pan.baidu.com/s/10wbwCN2DXNJ8LFsHLK_rmA)(the key is `c0mk`)
 Run 
 `$ python3 test_model.py --val_dataset your_test_data_path`
 
-##Demo
+## Demo
 If you want to use our interaction demo, run `main.py`.
